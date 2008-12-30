@@ -1,5 +1,10 @@
 #include <ruby.h>
-#include <shapefil.h>
+#if defined(HAVE_SHAPEFIL_H)
+	#include <shapefil.h>
+#endif
+#if defined(HAVE_LIBSHP_SHAPEFIL_H)
+	#include <libshp/shapefil.h>
+#endif
 #include "shpplus.h"
 
 typedef struct {
