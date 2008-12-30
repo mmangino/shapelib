@@ -1,0 +1,558 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html 
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>ruby-shapelib API</title>
+<link href="style.css" type="text/css" rel="stylesheet" />
+</head>
+<body>
+<h1><a name="label-0" id="label-0">module ShapeLib</a></h1><!-- RDLabel: "module ShapeLib" -->
+<p>This module is a wrapper of C Shapefile Library
+(also called <a href="http://shapelib.maptools.org/">ShapeLib</a>).
+It consists of basically two classes:
+<a href="#label-5">ShapeFile</a> and <a href="#label-29">Shape</a>.
+If you are unfamiliar with object-oriented programming,
+please see <a href="#label-83">Appendix A: C to Ruby equivalence table</a>.</p>
+<p>A extension library <code>shapelib</code> must be required before using this module:</p>
+<pre>require 'shapelib'</pre>
+<h2><a name="label-1" id="label-1">module functions</a></h2><!-- RDLabel: "module functions" -->
+<p>Following three functions construct a point object.
+It can be used like top level function after <code>include</code>:</p>
+<pre>include ShapeLib
+pt = new_point(1, 2)</pre>
+<p>Arguments <var>x</var>, <var>y</var>, <var>z</var>, and <var>m</var> <a href="#label-85">should be Float</a>.</p>
+<dl>
+<dt><a name="label-2" id="label-2"><code>ShapeLib.new_point <var>x</var>, <var>y</var></code></a></dt><!-- RDLabel: "ShapeLib.new_point x, y" -->
+<dd>
+creates a <a href="#label-51">class Point</a> object.</dd>
+<dt><a name="label-3" id="label-3"><code>ShapeLib.new_point <var>x</var>, <var>y</var>, <var>m</var></code></a></dt><!-- RDLabel: "ShapeLib.new_point x, y, m" -->
+<dd>
+creates a <a href="#label-57">class PointM</a> object.</dd>
+<dt><a name="label-4" id="label-4"><code>ShapeLib.new_point <var>x</var>, <var>y</var>, <var>m</var>, <var>z</var></code></a></dt><!-- RDLabel: "ShapeLib.new_point x, y, m, z" -->
+<dd>
+creates a <a href="#label-59">class PointZ</a> object.</dd>
+</dl>
+<h2><a name="label-5" id="label-5">class ShapeFile</a></h2><!-- RDLabel: "class ShapeFile" -->
+<h3><a name="label-6" id="label-6">class methods</a></h3><!-- RDLabel: "class methods" -->
+<p>Following two class methods <code>new</code> and <code>open</code>
+return an instance of <a href="#label-5">class ShapeFile</a> if succeeded.
+Exception is raised on failure.
+It is recommended to call <a href="#label-28">shapefile.close</a>
+when each shapefile is no longer used.</p>
+<dl>
+<dt><a name="label-7" id="label-7"><code>ShapeFile::open <var>filename</var>, <var>access</var> = '<var>rb</var>'</code></a></dt><!-- RDLabel: "ShapeFile::open filename, access = 'rb'" -->
+<dt><a name="label-8" id="label-8"><code>ShapeFile::open(<var>filename</var>, <var>access</var> = '<var>rb</var>') { |<var>fp</var>| ... }</code></a></dt><!-- RDLabel: "ShapeFile::open" -->
+<dd>
+<p>The <code>open</code> method opens an existing shapefile. </p>
+<p>Argument <var>filename</var> should be
+either fullname (like "<code>basename.shp</code>")
+or just basename (like "<code>basename</code>").
+Suffix <code>.shp</code> must be lowercase if specified.
+Both <code>.shp</code> and <code>.shx</code> files must exist at the specified path.</p>
+<p>Argument <var>access</var> are passed to <code>fopen(3)</code> through
+<a href="#label-92">ShapeLib</a> <code>SHPOpen()</code> function.
+Either '<code>rb</code>' or '<code>rb+</code>' should be used.</p>
+<p>If a block is given to these constructors,
+the opened shapefile object is yielded like File::open.
+The shapefile is closed at the end of block,
+and the constructor returns <code>nil</code>.</p>
+<pre># example
+ShapeLib::ShapeFile.open(filename) { |fp|
+   print "#{filename} has #{fp.size} records.\n"
+}</pre></dd>
+<dt><a name="label-9" id="label-9"><code>ShapeFile::new <var>filename</var>, <var>shapetype</var>, <var>attrs</var></code></a></dt><!-- RDLabel: "ShapeFile::new filename, shapetype, attrs" -->
+<dt><a name="label-10" id="label-10"><code>ShapeFile::new(<var>filename</var>, <var>shapetype</var>, <var>attrs</var>) { |<var>fp</var>| ... }</code></a></dt><!-- RDLabel: "ShapeFile::new" -->
+<dd>
+<p>The <code>new</code> method creates a shapefile.
+All three files (<code>.shp</code>, <code>.shx</code>, and <code>.dbf</code>) are created.
+Argument <var>shapetype</var> specifies the <a href="#label-86">type of shapes</a>
+to be stored in the shapefile.
+Argument <var>attrs</var> is an array of arrays
+that specifies <var>field_name</var>, <var>field_type</var>, <var>width</var>,
+and optional <var>decimal</var> as in
+<a href="#label-12">shapefile.add_field</a>
+.</p>
+<pre># example
+fp = ShapeFile::new('city.shp', :Point,
+   [['name', :String, 32],
+    ['population', :Integer, 9],
+    ['height', :Float, 9, 1]])</pre></dd>
+</dl>
+<h3><a name="label-11" id="label-11">instance methods</a></h3><!-- RDLabel: "instance methods" -->
+<dl>
+<dt><a name="label-12" id="label-12"><code>shapefile.add_field <var>field_name</var>, <var>field_type</var>, <var>width</var>, <var>decimal</var> = <var>0</var></code></a></dt><!-- RDLabel: "shapefile.add_field field_name, field_type, width, decimal = 0" -->
+<dd>
+<p>Adds an attribute field to the shapefile (that must be newly created by
+<a href="#label-9">ShapeFile::new</a>).
+Argument <var>field_name</var> is a String for field name;
+<var>field_type</var> specifies <a href="#label-87">field type</a>;
+<var>width</var> is nonnegative Integer for field width in characters; and
+<var>decimal</var> is nonnegative Integer for decimal points.
+Only Float field requires <var>decimal</var>; otherwise it can be missing.</p>
+<pre># example
+fp.add_field 'name', :String, 32
+fp.add_field 'height', "Float", 9, 1</pre></dd>
+<dt><a name="label-13" id="label-13"><code>shapefile.each { |<var>shape</var>| ... }</code></a></dt><!-- RDLabel: "shapefile.each" -->
+<dd>
+<p>yields all shapes in the shapefile.
+Equivalent to the following code:</p>
+<pre>shapefile.rewind
+while shape = shapefile.read
+  ...
+end</pre></dd>
+<dt><a name="label-14" id="label-14"><code>shapefile.field_count</code></a></dt><!-- RDLabel: "shapefile.field_count" -->
+<dd>
+returns the number of attribute fields made on the DBF file.</dd>
+<dt><a name="label-15" id="label-15"><code>shapefile.field_decimals <var>field</var></code></a></dt><!-- RDLabel: "shapefile.field_decimals field" -->
+<dd>
+returns the width of the <a href="#label-89">attribute field</a>.
+Zero is returned for non-Float fields.</dd>
+<dt><a name="label-16" id="label-16"><code>shapefile.field_index <var>name</var></code></a></dt><!-- RDLabel: "shapefile.field_index name" -->
+<dd>
+returns the index of the attribute field matching <var>name</var>, or nil on failure.</dd>
+<dt><a name="label-17" id="label-17"><code>shapefile.field_name <var>index</var></code></a></dt><!-- RDLabel: "shapefile.field_name index" -->
+<dd>
+returns the name of the attribute field with <var>index</var>, or nil on failure.</dd>
+<dt><a name="label-18" id="label-18"><code>shapefile.field_type <var>field</var></code></a></dt><!-- RDLabel: "shapefile.field_type field" -->
+<dd>
+returns the type of the <a href="#label-89">attribute field</a>.
+The result is Symbol
+(one of :String, :Integer, :Float, :Logical, or :Invalid)
+or nil on failure.</dd>
+<dt><a name="label-19" id="label-19"><code>shapefile.field_width <var>field</var></code></a></dt><!-- RDLabel: "shapefile.field_width field" -->
+<dd>
+returns the width of the <a href="#label-89">attribute field</a>.</dd>
+<dt><a name="label-20" id="label-20"><code>shapefile.fields</code></a></dt><!-- RDLabel: "shapefile.fields" -->
+<dd>
+returns an Array containing a list of attribute field name.</dd>
+<dt><a name="label-21" id="label-21"><code>shapefile.maxbound</code></a></dt><!-- RDLabel: "shapefile.maxbound" -->
+<dd>
+returns the maximum values for x, y, m, z coordinates.
+Note: the order is M then Z, not Z then M.</dd>
+<dt><a name="label-22" id="label-22"><code>shapefile.minbound</code></a></dt><!-- RDLabel: "shapefile.minbound" -->
+<dd>
+returns the minimum values for x, y, m, z coordinates.</dd>
+<dt><a name="label-23" id="label-23"><code>shapefile.read <var>rec</var> = -<var>1</var></code></a></dt><!-- RDLabel: "shapefile.read rec = -1" -->
+<dd>
+reads the shape/record <var>rec</var> from shapefile.
+If <var>rec</var> is missing,
+the next record to previously read one
+(or the first record #0 for the first time) is used.
+An instance of <a href="#label-29">class Shape</a> is returned,
+including all attributes written on the DBF.
+On error <code>nil</code> is returned.</dd>
+<dt><a name="label-24" id="label-24"><code>shapefile.rewind</code></a></dt><!-- RDLabel: "shapefile.rewind" -->
+<dd>
+After that, <a href="#label-23">shapefile.read</a>
+without argument will return the first shape/record of the shapefile.</dd>
+<dt><a name="label-25" id="label-25"><code>shapefile.shape_type</code></a></dt><!-- RDLabel: "shapefile.shape_type" -->
+<dd>
+returns the type of shape by Symbol.</dd>
+<dt><a name="label-26" id="label-26"><code>shapefile.size</code></a></dt><!-- RDLabel: "shapefile.size" -->
+<dd>
+returns the number of records (or shapes) in the shapefile.
+<a name="footmark-1" id="footmark-1" href="#foottext-1"><sup><small>*1</small></sup></a></dd>
+<dt><a name="label-27" id="label-27"><code>shapefile.write <var>shape</var>, <var>rec</var> = <var>nil</var></code></a></dt><!-- RDLabel: "shapefile.write shape, rec = nil" -->
+<dd>
+writes <var>shape</var> into shapefile at record number <var>rec</var>.
+The <var>shape</var> must be a instance of <a href="#label-29">class Shape</a> or subclass.
+Attributes attached to <var>shape</var> are stored into DBF file.
+If <var>rec</var> is missing, the record is appended at the end of shapefile.</dd>
+<dt><a name="label-28" id="label-28"><code>shapefile.close</code></a></dt><!-- RDLabel: "shapefile.close" -->
+<dd>
+<p>The <code>close</code> method flushes all information
+into the shapefile and release related resources.
+After that the instance cannot be used.</p>
+<p>It is recommended to call it at the end of processing
+to reduce the risk of trouble,
+although it is called automatically
+at the time of garbage collecting or at the end of interpreter.</p></dd>
+</dl>
+<h2><a name="label-29" id="label-29">class Shape</a></h2><!-- RDLabel: "class Shape" -->
+<p>Shape consists of a geometric shape (written in SHP file)
+and attributes attached to the shape (written in DBF file).
+Instance of these subclasses are obtained from
+<a href="#label-23">ShapeFile#read</a>
+or constructor like <a href="#label-51">Point::new</a>.</p>
+<p>Every instance of the class Shape belongs to one of subclasses,
+depending on the type of shape. </p>
+<h3><a name="label-30" id="label-30">structure of subclasses</a></h3><!-- RDLabel: "structure of subclasses" -->
+<ul>
+<li><a href="#label-29">class Shape</a>
+<ul>
+<li><a href="#label-51">class Point</a>
+<ul>
+<li><a href="#label-57">class PointM</a>
+<ul>
+<li><a href="#label-59">class PointZ</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#label-61">class Arc</a>
+<ul>
+<li><a href="#label-64">class ArcM</a>
+<ul>
+<li><a href="#label-65">class ArcZ</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#label-66">class Polygon</a> 
+<ul>
+<li><a href="#label-69">class PolygonM</a> 
+<ul>
+<li><a href="#label-70">class PolygonZ</a> </li>
+</ul></li>
+</ul></li>
+<li><a href="#label-71">class MultiPoint</a> 
+<ul>
+<li><a href="#label-74">class MultiPointM</a> 
+<ul>
+<li><a href="#label-75">class MultiPointZ</a> </li>
+</ul></li>
+</ul></li>
+<li><a href="#label-76">class MultiPatch</a> </li>
+</ul></li>
+</ul>
+<h3><a name="label-31" id="label-31">class method</a></h3><!-- RDLabel: "class method" -->
+<dl>
+<dt><a name="label-32" id="label-32"><code>Shape::new <var>hash</var></code></a></dt><!-- RDLabel: "Shape::new hash" -->
+<dd>
+Argument <var>hash</var> is a hash (or <a href="#label-90">something behaves like a hash</a>)
+that contains the attributes of the shape.
+Hash returned by <a href="#label-44">shape.to_h</a> can be used as <var>hash</var>.</dd>
+</dl>
+<h3><a name="label-33" id="label-33">instance methods</a></h3><!-- RDLabel: "instance methods" -->
+<dl>
+<dt><a name="label-34" id="label-34"><code>shape [<var>field</var>]</code></a></dt><!-- RDLabel: "shape [field]" -->
+<dd>
+value of the <a href="#label-89">attribute</a> <var>field</var>
+related to the shape.</dd>
+<dt><a name="label-35" id="label-35"><code>shape [<var>field</var>] = <var>value</var></code></a></dt><!-- RDLabel: "shape [field] = value" -->
+<dd>
+sets <a href="#label-89">attribute</a> <var>field</var> to <var>value</var>.</dd>
+<dt><a name="label-36" id="label-36"><code>shape.inspect</code></a></dt><!-- RDLabel: "shape.inspect" -->
+<dd>
+currently similar to <a href="#label-44">shape.to_h</a><code>.to_s</code>.</dd>
+<dt><a name="label-37" id="label-37"><code>shape.maxbound</code></a></dt><!-- RDLabel: "shape.maxbound" -->
+<dd>
+returns the maximum values for x, y, m, z coordinates.
+Note: the order is M then Z, not Z then M.</dd>
+<dt><a name="label-38" id="label-38"><code>shape.minbound</code></a></dt><!-- RDLabel: "shape.minbound" -->
+<dd>
+returns the minimum values for x, y, m, z coordinates.</dd>
+<dt><a name="label-39" id="label-39"><code>shape.part_start</code></a></dt><!-- RDLabel: "shape.part_start" -->
+<dd>
+returns an array of Integer that indicates beginning offset
+for each part in <a href="#label-47">shape.xvals</a> etc.</dd>
+<dt><a name="label-40" id="label-40"><code>shape.part_type</code></a></dt><!-- RDLabel: "shape.part_type" -->
+<dd>
+returns an array containing <a href="#label-88">part type</a> by Symbol.
+Point or multipoint returns <code>nil</code>.</dd>
+<dt><a name="label-41" id="label-41"><code>shape.rewind_polygon</code></a></dt><!-- RDLabel: "shape.rewind_polygon" -->
+<dd>
+"This function will reverse any rings necessary
+in order to enforce the shapefile restrictions
+on the required order of inner and outer rings
+in the Shapefile specification.
+It returns <code>true</code> if a change is made and
+<code>false</code> if no change is made.
+Only polygon objects will be affected though any object may be passed."
+<a name="footmark-2" id="footmark-2" href="#foottext-2"><sup><small>*2</small></sup></a></dd>
+<dt><a name="label-42" id="label-42"><code>shape.shape_id</code></a></dt><!-- RDLabel: "shape.shape_id" -->
+<dd>
+returns the number of record by which the shape is read from a shapefile.
+Nil is returned if the shape is not read from file.</dd>
+<dt><a name="label-43" id="label-43"><code>shape.shape_type</code></a></dt><!-- RDLabel: "shape.shape_type" -->
+<dd>
+returns the <a href="#label-86">type of shape</a> by Symbol.</dd>
+<dt><a name="label-44" id="label-44"><code>shape.to_h</code></a></dt><!-- RDLabel: "shape.to_h" -->
+<dd>
+<p>returns a hash that contains all attributes and geometry information.
+Each attribute have a key of String,
+while geometry information has keys of Symbol.</p>
+<pre>pt = ShapeLib::Point::new(1, 2, 'name' =&gt; 'Madison')
+pt.to_h =&gt; {"name"=&gt;"Madison", :zvals=&gt;[0.0], :n_parts=&gt;0,
+    :n_vertices=&gt;1, :maxbound=&gt;[1.0, 2.0, 0.0, 0.0],
+    :part_start=&gt;nil, :part_type=&gt;nil, :xvals=&gt;[1.0],
+    :minbound=&gt;[1.0, 2.0, 0.0, 0.0], :shape_type=&gt;:Point,
+    :yvals=&gt;[2.0], :mvals=&gt;[0.0], :shape_id=&gt;nil}</pre></dd>
+<dt><a name="label-45" id="label-45"><code>shape.to_s</code></a></dt><!-- RDLabel: "shape.to_s" -->
+<dd>
+current implementation is identical to <a href="#label-46">shape.wkt</a>.
+Note that this lose information.</dd>
+<dt><a name="label-46" id="label-46"><code>shape.wkt</code></a></dt><!-- RDLabel: "shape.wkt" -->
+<dd>
+<p>returns WKT (well known text) representation of geometry
+as defined in <a href="#label-94">ISO 19125-1</a>.
+<em>Caution: current implementation does not always handle Polygon[MZ] and MultiPatch correctly.</em></p>
+<pre>ShapeLib::Arc.new([1, 2], [3, 4], [5, 6]).wkt
+=&gt; "LINESTRING(1 2, 3 4, 5 6)"
+ShapeLib::Arc.new([[1, 2], [3, 4]], [[5, 6], [7, 8]]).wkt
+=&gt; "MULTILINESTRING((1 2, 3 4), (5 6, 7 8))"</pre></dd>
+<dt><a name="label-47" id="label-47"><code>shape.xvals</code></a></dt><!-- RDLabel: "shape.xvals" -->
+<dd>
+<p>returns an array of x values.</p>
+<pre>ShapeLib::Arc.new([1, 2], [3, 4], [5, 6]).xvals
+=&gt; [1.0, 3.0, 5.0]</pre>
+<p>Multipart shape results flattened array (all parts joined).</p>
+<pre>ShapeLib::Arc.new([[1, 2], [3, 4]], [[5, 6], [7, 8]]).xvals
+=&gt; [1.0, 3.0, 5.0, 7.0]</pre></dd>
+<dt><a name="label-48" id="label-48"><code>shape.yvals</code></a></dt><!-- RDLabel: "shape.yvals" -->
+<dd>
+<p>returns an array of y values.</p>
+<pre>ShapeLib::Arc.new([1, 2], [3, 4], [5, 6]).xvals
+=&gt; [2.0, 4.0, 6.0]</pre></dd>
+<dt><a name="label-49" id="label-49"><code>shape.mvals</code></a></dt><!-- RDLabel: "shape.mvals" -->
+<dd>
+<p>returns an array of m values. Nil is returned for missing value.</p>
+<pre>ShapeLib::Arc.new([1, 2], [3, 4], [5, 6]).mvals
+=&gt; [nil, nil, nil]
+ShapeLib::ArcM.new([1, 2, 3], [4, 5, 6], [7, 8, 9]).mvals
+=&gt; [3, 6, 9]</pre></dd>
+<dt><a name="label-50" id="label-50"><code>shape.zvals</code></a></dt><!-- RDLabel: "shape.zvals" -->
+<dd>
+returns an array of z values.</dd>
+</dl>
+<h2><a name="label-51" id="label-51">class Point</a></h2><!-- RDLabel: "class Point" -->
+<p>Point is a geometric point that has two coordinates x and y.</p>
+<dl>
+<dt><a name="label-52" id="label-52"><code>Point::new <var>x</var>, <var>y</var>, <var>attrs</var> = {}</code></a></dt><!-- RDLabel: "Point::new x, y, attrs =" -->
+<dd>
+creates a new point instance with coordinates <var>x</var> and <var>y</var>
+(both are converted to Float).
+Optional argument <var>attrs</var> is a hash containing attributes
+such as <code>{"key1"=&gt;value1, "key2"=&gt;value2, ...}</code>.</dd>
+<dt><a name="label-53" id="label-53"><code>point.x</code></a></dt><!-- RDLabel: "point.x" -->
+<dd>
+returns a Float x value.</dd>
+<dt><a name="label-54" id="label-54"><code>point.y</code></a></dt><!-- RDLabel: "point.y" -->
+<dd>
+returns a Float y value.</dd>
+<dt><a name="label-55" id="label-55"><code>point.m</code></a></dt><!-- RDLabel: "point.m" -->
+<dd>
+returns a Float m (height) value.</dd>
+<dt><a name="label-56" id="label-56"><code>point.z</code></a></dt><!-- RDLabel: "point.z" -->
+<dd>
+returns a Float z (elevation) value.</dd>
+</dl>
+<h2><a name="label-57" id="label-57">class PointM</a></h2><!-- RDLabel: "class PointM" -->
+<p>Point is a geometric point that has three coordinates x, y and m.</p>
+<dl>
+<dt><a name="label-58" id="label-58"><code>PointM::new <var>x</var>, <var>y</var>, <var>m</var>, <var>attrs</var> = {}</code></a></dt><!-- RDLabel: "PointM::new x, y, m, attrs =" -->
+</dl>
+<h2><a name="label-59" id="label-59">class PointZ</a></h2><!-- RDLabel: "class PointZ" -->
+<p>Point is a geometric point that has four coordinates x, y, m and z.</p>
+<dl>
+<dt><a name="label-60" id="label-60"><code>PointZ::new <var>x</var>, <var>y</var>, <var>m</var>, <var>z</var>, <var>attrs</var> = {}</code></a></dt><!-- RDLabel: "PointZ::new x, y, m, z, attrs =" -->
+</dl>
+<h2><a name="label-61" id="label-61">class Arc</a></h2><!-- RDLabel: "class Arc" -->
+<p>Arc is consists of a set of (two or more) points.
+Each point has two coordinates x and y.
+It is also called polyline.</p>
+<dl>
+<dt><a name="label-62" id="label-62"><code>Arc::new <var>point</var>, <var>point</var>, ...</code></a></dt><!-- RDLabel: "Arc::new point, point, ..." -->
+<dd>
+Constructs a single arc.
+<var>point</var> is array of numerals, or <a href="#label-51">class Point</a>.</dd>
+<dt><a name="label-63" id="label-63"><code>Arc::new [<var>point</var>, <var>point</var>, ...], [<var>point</var>, <var>point</var>, ...], ...</code></a></dt><!-- RDLabel: "Arc::new [point, point, ...], [point, point, ...], ..." -->
+<dd>
+Constructs a multipart arc that represents two disconnected polyline.</dd>
+</dl>
+<h2><a name="label-64" id="label-64">class ArcM</a></h2><!-- RDLabel: "class ArcM" -->
+<p>ArcM is similar to Arc, but points also have m (measure) coordinates.</p>
+<h2><a name="label-65" id="label-65">class ArcZ</a></h2><!-- RDLabel: "class ArcZ" -->
+<p>ArcZ is similar to ArcM, but points also have z coordinates.</p>
+<h2><a name="label-66" id="label-66">class Polygon</a></h2><!-- RDLabel: "class Polygon" -->
+<p>Polygon is one (or more) closed arc.</p>
+<dl>
+<dt><a name="label-67" id="label-67"><code>Polygon::new <var>point</var>, <var>point</var>, ...</code></a></dt><!-- RDLabel: "Polygon::new point, point, ..." -->
+<dd>
+Constructs a object with single polygon.</dd>
+<dt><a name="label-68" id="label-68"><code>Polygon::new [<var>point</var>, <var>point</var>, ...], [<var>point</var>, <var>point</var>, ...], ...</code></a></dt><!-- RDLabel: "Polygon::new [point, point, ...], [point, point, ...], ..." -->
+<dd>
+Constructs a object with multiple polygons.</dd>
+</dl>
+<h2><a name="label-69" id="label-69">class PolygonM</a></h2><!-- RDLabel: "class PolygonM" -->
+<p>PolygonM is similar to Polygon, but points also have m (measure) coordinates.</p>
+<h2><a name="label-70" id="label-70">class PolygonZ</a></h2><!-- RDLabel: "class PolygonZ" -->
+<p>PolygonZ is similar to PolygonM, but points also have z coordinates.</p>
+<h2><a name="label-71" id="label-71">class MultiPoint</a></h2><!-- RDLabel: "class MultiPoint" -->
+<p>MultiPoint is a set of points.</p>
+<dl>
+<dt><a name="label-72" id="label-72"><code>MultiPoint::new <var>point</var>, <var>point</var>, ...</code></a></dt><!-- RDLabel: "MultiPoint::new point, point, ..." -->
+<dt><a name="label-73" id="label-73"><code>MultiPoint::new [<var>point</var>, <var>point</var>, ...]</code></a></dt><!-- RDLabel: "MultiPoint::new [point, point, ...]" -->
+<dd>
+Above two are the same.</dd>
+</dl>
+<h2><a name="label-74" id="label-74">class MultiPointM</a></h2><!-- RDLabel: "class MultiPointM" -->
+<p>MultiPointM is similar to MultiPoint, but points also have m (measure) coordinates.</p>
+<h2><a name="label-75" id="label-75">class MultiPointZ</a></h2><!-- RDLabel: "class MultiPointZ" -->
+<p>MultiPointZ is similar to MultiPointM, but points also have z coordinates.</p>
+<h2><a name="label-76" id="label-76">class MultiPatch</a></h2><!-- RDLabel: "class MultiPatch" -->
+<dl>
+<dt><a name="label-77" id="label-77"><code>MultiPatch::new [<var>part_type</var>, <var>point</var>, <var>point</var>, ...], [<var>part_type</var>, <var>point</var>, ...], ...</code></a></dt><!-- RDLabel: "MultiPatch::new [part_type, point, point, ...], [part_type, point, ...], ..." -->
+<dd>
+Constructs a MultiPatch object.
+Note that the first element of each array must be <a href="#label-88">part type</a>.</dd>
+</dl>
+<h2><a name="label-78" id="label-78">constants</a></h2><!-- RDLabel: "constants" -->
+<h3><a name="label-79" id="label-79">Field Type Constants</a></h3><!-- RDLabel: "Field Type Constants" -->
+<dl>
+<dt><a name="label-80" id="label-80"><code>ShapeLib::String</code></a></dt><!-- RDLabel: "ShapeLib::String" -->
+<dt><a name="label-81" id="label-81"><code>ShapeLib::Integer</code></a></dt><!-- RDLabel: "ShapeLib::Integer" -->
+<dt><a name="label-82" id="label-82"><code>ShapeLib::Float</code></a></dt><!-- RDLabel: "ShapeLib::Float" -->
+</dl>
+<h2><a name="label-83" id="label-83">Appendix A: C to Ruby equivalence table</a></h2><!-- RDLabel: "Appendix A: C to Ruby equivalence table" -->
+<ul>
+<li>DBFHandle:
+  <a href="#label-5">class ShapeFile</a> contains DBFHandle.</li>
+<li>SHPHandle:
+  <a href="#label-5">class ShapeFile</a> contains SHPHandle.</li>
+<li>SHPObject:
+  <a href="#label-29">class Shape</a> contains SHPObject and attributes stored in DBF.
+  Access to members of the structure can be translated using <a href="#label-44">shape.to_h</a>.</li>
+<li>SHPOpen():
+  called in <a href="#label-7">ShapeFile::open</a></li>
+<li>SHPGetInfo():
+  <a href="#label-26">shapefile.size</a>,
+  <a href="#label-25">shapefile.shape_type</a>,
+  <a href="#label-22">shapefile.minbound</a>, and
+  <a href="#label-21">shapefile.maxbound</a>.</li>
+<li>SHPReadObject():
+  <a href="#label-23">shapefile.read</a></li>
+<li>SHPClose():
+  <a href="#label-28">shapefile.close</a></li>
+<li>SHPCreate():
+  called in <a href="#label-9">ShapeFile::new</a></li>
+<li>SHPCreateSimpleObject() and SHPCreateObject():
+  <a href="#label-32">Shape::new</a> and <code>new</code> method of its subclasses</li>
+<li>SHPComputeExtents():
+  there is no need to call it, since the current version of
+  ruby-shapelib does not allow users to change geometry of a shape
+  once it is created.</li>
+<li>SHPWriteObject():
+  <a href="#label-27">shapefile.write</a></li>
+<li>SHPDestroyObject():
+  called automatically while the ruby interpreter does garbage collection.</li>
+<li>SHPRewindObject():
+  <a href="#label-41">shape.rewind_polygon</a></li>
+<li>DBFOpen():
+  called in <a href="#label-7">ShapeFile::open</a></li>
+<li>DBFCreate():
+  called in <a href="#label-9">ShapeFile::new</a></li>
+<li>DBFGetFieldCount():
+  <a href="#label-14">shapefile.field_count</a></li>
+<li>DBFGetRecordCount():
+  There is no need to call it if shapefile is properly created,
+  i.e. *.SHP and *.DBF files have the same number of records.
+  See also <a href="#label-26">shapefile.size</a>.</li>
+<li>DBFGetFieldIndex():
+  <a href="#label-16">shapefile.field_index</a></li>
+<li>DBFGetFieldInfo():
+  <a href="#label-15">shapefile.field_decimals</a>,
+  <a href="#label-17">shapefile.field_name</a>,
+  <a href="#label-18">shapefile.field_type</a>, and
+  <a href="#label-19">shapefile.field_width</a></li>
+<li>DBFAddField():
+  <a href="#label-12">shapefile.add_field</a></li>
+<li>DBFReadIntegerAttribute(), DBFReadDoubleAttribute(), and
+  DBFReadStringAttribute():
+  <a href="#label-34">shape [field]</a></li>
+<li>DBFIsAttributeNULL():
+  called in <a href="#label-34">shape [field]</a>.
+  Nil is returned if the attribute is null.</li>
+<li>DBFWriteIntegerAttribute(), DBFWriteDoubleAttribute(), and
+  DBFWriteStringAttribute():
+  <a href="#label-35">shape [field] = value</a></li>
+<li>DBFWriteNULLAttribute():
+  called if <code>nil</code> is given to <a href="#label-35">shape [field] = value</a>.</li>
+<li>DBFGetNativeFieldType():
+  not implemented in ruby-shapelib.
+  Does anyone know how to interpret the return value properly?</li>
+</ul>
+<h2><a name="label-84" id="label-84">Appendix B: Flexible argument</a></h2><!-- RDLabel: "Appendix B: Flexible argument" -->
+<p>Some method arguments take various objects for convenience.
+This appendix discusses the detail of acceptable value.</p>
+<dl>
+<dt><a name="label-85" id="label-85">should be Float</a></dt><!-- RDLabel: "should be Float" -->
+<dd>
+Any object that respond to <code>to_f</code> is converted to Float.
+String is not acceptable.
+<code>nil</code> is treated as -2e-38 (NODATA) for <var>m</var> (measure) coordinate,
+or as 0.0 otherwise.
+</dd>
+<dt><a name="label-86" id="label-86">type of shapes</a></dt><!-- RDLabel: "type of shapes" -->
+<dd>
+For <a href="#label-9">ShapeFile::new</a>
+and <a href="#label-32">Shape::new</a>,
+acceptable values for <var>shapetype</var> are:
+<ul>
+<li>Class object like ShapeLib::Point (listed in <a href="#label-30">structure of subclasses</a>)</li>
+<li>String such as <code>"Point"</code> or <code>"PolygonZ"</code>
+    (the same list, but do not include "ShapeLib::")</li>
+<li>Symbol such as <code>:Point</code> or <code>:PolygonZ</code>
+    (result of <a href="#label-25">shapefile.shape_type</a> and <a href="#label-43">shape.shape_type</a>),
+    or</li>
+<li>Integer code
+    (please see <a href="#label-93">ESRI Whitepaper</a>)</li>
+</ul>
+</dd>
+<dt><a name="label-87" id="label-87">field type</a></dt><!-- RDLabel: "field type" -->
+<dd>
+For <a href="#label-12">shapefile.add_field</a>,
+acceptable values for <var>field_type</var> are:
+<ul>
+<li>String "String", "Integer", or "Float", or</li>
+<li>Symbol :String, :Integer, or :Float
+    (result of <a href="#label-18">shapefile.field_type</a>).</li>
+<li>Integer constants listed <a href="#label-79">above</a>.</li>
+</ul>
+</dd>
+<dt><a name="label-88" id="label-88">part type</a></dt><!-- RDLabel: "part type" -->
+<dd>
+acceptable values are
+<ul>
+<li>String "TriangleStrip", "TriangleFan", "OuterRing", "InnerRing",
+    "FirstRing", or "Ring"</li>
+<li>corresponding Symbol :TriangleStrip etc.</li>
+</ul>
+</dd>
+<dt><a name="label-89" id="label-89">attribute field</a></dt><!-- RDLabel: "attribute field" -->
+<dd>
+For many shapefile methods like <a href="#label-18">shapefile.field_type field</a>,
+both String name and Integer index are acceptable.
+</dd>
+<dt><a name="label-90" id="label-90">something behaves like a hash</a></dt><!-- RDLabel: "something behaves like a hash" -->
+<dd>
+For <a href="#label-32">Shape::new hash</a>, the argument <var>hash</var>
+<ul>
+<li>must respond to [<var>key</var>] method with a Symbol as a <var>key</var></li>
+<li>should respond to <code>to_a</code> method, so that attributes be loaded </li>
+</ul>
+</dd>
+</dl>
+<h2><a name="label-91" id="label-91">References</a></h2><!-- RDLabel: "References" -->
+<dl>
+<dt><a name="label-92" id="label-92">ShapeLib</a></dt><!-- RDLabel: "ShapeLib" -->
+<dd>
+<a href="http://shapelib.maptools.org/shp_api.html">&lt;URL:http://shapelib.maptools.org/shp_api.html&gt;</a>
+<a href="http://shapelib.maptools.org/dbf_api.html">&lt;URL:http://shapelib.maptools.org/dbf_api.html&gt;</a>
+</dd>
+<dt><a name="label-93" id="label-93">ESRI Whitepaper</a></dt><!-- RDLabel: "ESRI Whitepaper" -->
+<dd>
+<a href="http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf">&lt;URL:http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf&gt;</a>
+or <a href="http://shapelib.maptools.org/dl/shapefile.pdf">&lt;URL:http://shapelib.maptools.org/dl/shapefile.pdf&gt;</a>
+</dd>
+<dt><a name="label-94" id="label-94">ISO 19125-1</a></dt><!-- RDLabel: "ISO 19125-1" -->
+<dd>
+<a href="http://portal.opengeospatial.org/modules/admin/license_agreement.php?suppressHeaders=0&amp;access_license_id=3&amp;target=http://portal.opengeospatial.org/files/index.php?artifact_id=13227">Found on opengeospatial.org</a>.
+</dd>
+</dl>
+<hr />
+<p class="foottext">
+<a name="foottext-1" id="foottext-1" href="#footmark-1"><sup><small>*1</small></sup></a><small>If DBF file has different number of records,
+warning message is shown in $VERBOSE mode.</small><br />
+<a name="foottext-2" id="foottext-2" href="#footmark-2"><sup><small>*2</small></sup></a><small>taken from <a href="#label-92">ShapeLib</a> document.</small><br />
+</p>
+</body>
+</html>

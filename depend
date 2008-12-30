@@ -1,0 +1,49 @@
+MYNAME = ruby-shapelib
+
+main.o:: sflist.h splist.h shpplus.h valconv.h sfcode.h spcode.h \
+	spwkt.h
+shpplus.o:: shpplus.h
+
+RD2 = rd2 -r rd/rd2html-lib --with-css=style.css
+
+doc: Interface.html
+Interface.html: Interface.rd
+	$(RD2) --html-title="$(MYNAME) API" $< > $@
+
+#rpm:
+#	$(MAKE) -f build.mk rpm
+
+clean2: clean
+	-rm -f test*
+
+tags: main.c shpplus.c sfcode.h sflist.h shpplus.h spcode.h \
+    splist.h valconv.h spwkt.h
+	ctags *.h *.c
+
+test: shapelib.so
+	$(RUBY) $(RUBYOPT) ztest1.rb
+
+distcrean: clean
+	-rm -f mkmf.log Makefile
+
+TARDIR=..
+
+tar:
+	$(MAKE) tar.b VERSION=`awk '/Version:/ {print $$2}' $(MYNAME).spec`
+
+tar.b:
+	cvs export -r HEAD -d $(MYNAME)-$(VERSION) $(MYNAME)
+	tar -czf $(TARDIR)/$(MYNAME)-$(VERSION).tar.gz $(MYNAME)-$(VERSION)/*
+	rm -rf $(MYNAME)-$(VERSION)
+
+rpm:
+	$(MAKE) rpm.b VERSION=`awk '/Version:/ {print $$2}' $(MYNAME).spec`
+
+rpm.b:
+	test -d $(RPM)/../rpm/SPECS
+	test ! -d $(MYNAME)-$(VERSION) || rm -rf $(MYNAME)-$(VERSION)
+	cvs export -r HEAD -d $(MYNAME)-$(VERSION) $(MYNAME)
+	tar -czf $(RPM)/SOURCES/$(MYNAME).tar.gz $(MYNAME)-$(VERSION)/*
+	rm -rf $(MYNAME)-$(VERSION)
+	cp $(MYNAME).spec $(RPM)/SPECS
+	rpmbuild -ba $(RPM)/SPECS/$(MYNAME).spec

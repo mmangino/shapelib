@@ -1,0 +1,136 @@
+/*
+ * style.css: CSS style definition file
+ * taken from srwiki
+ * originally for `Rubyavailable' <URL:http://www.jin.gr.jp/~nahi/Ruby/*>
+ */
+
+body {
+/*    background: #EEEEEE;
+*/
+    background: white;
+    color: black;
+    margin-left: 2%;
+    margin-right: 2%;
+    /* font-size: 10.5pt; */
+    font-family: verdana, arial, helvetica, Sans-Serif;
+}
+
+h1 {
+    font-family: "times roman", verdana, sans-serif; 
+    /* text-align: right; */
+/*
+    color: #FFFFFF;
+    background: #33AA99;
+*/
+    color: #5040f0;
+    background: #f0f0f0;
+    margin-top: 1%;
+    margin-right: 10%;
+    border-top: #dddddd 4px solid;
+    border-left: #e0e0e0 4px solid;
+    border-right: #e0e0e0 4px solid;
+    border-bottom: #eeeeee 4px solid;
+}
+
+h2, h3, h4, h5, h6 {
+    font-family: verdana, arial, helvetica, Sans-Serif;
+}
+
+h2 {
+    color: #FFFFFF;
+    background: #5040f0;
+    margin-right: 30%;
+    border-bottom: #9080f0 3px solid;
+}
+
+h3 {
+    color: #5040f0;
+    border-left: #9080f0 0.5em solid;
+    border-bottom: #5040f0 4px solid;
+    margin-right: 50%;
+}
+
+div.header p.status { text-align: right; }
+div.header p.last-modified { text-align: left; }
+
+/*
+li p {
+    margin-top: -1ex;
+}
+*/
+
+dt {
+    font-weight: bold;
+    margin-top: 2ex;
+    margin-left: 1em;
+}
+
+td {
+  color: black;
+}
+
+/*
+a {
+  color: #0000f0;
+}
+*/
+
+a:hover {
+  color: red;
+}
+
+address {
+    color: gray;
+    background: #EEEEEE;
+    text-align: right;
+    font-family: Times, serif;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: normal;
+}
+
+var {
+    color: #408000;
+}
+
+em {
+    color: #004080;
+    font-family: arial, helvetica, Sans-Serif, gothic;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: bold;
+}
+
+pre {
+    border-right: #646464 1px solid;
+    padding-right: 0.5em;
+    border-top: #646464 1px solid;
+    padding-top: 0.5em;
+    border-left: #646464 1px solid;
+    padding-left: 0.5em;
+    border-bottom: #646464 1px solid;
+    padding-bottom: 0.5em;
+    margin-left: 1em;
+    margin-right: 2em;
+    white-space: pre;
+    background-color: #e6e6e6;
+    color: black;
+}
+
+span.download {
+    font-weight: normal;
+    color: blue;
+    background: #EEEEEE;
+}
+
+.label-not-found {
+    color: #FF4400;
+}
+
+.path {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+
+.navi {
+    text-align: right;
+}
