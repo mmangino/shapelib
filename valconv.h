@@ -296,8 +296,9 @@ static VALUE IntUnpack(int *up, unsigned num)
     static VALUE unpackfmt = 0;
     VALUE buf;
     if (unpackfmt == 0) {
-	unpackid = rb_intern("unpack");
-	unpackfmt = rb_str_new2("i*");
+			unpackid = rb_intern("unpack");
+			unpackfmt = rb_str_new2("i*");
+                        rb_global_variable(&unpackfmt);
     }
     buf = rb_str_new((char *)up, sizeof(int) * num);
     return rb_funcall(buf, unpackid, 1, unpackfmt);
